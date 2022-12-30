@@ -9,9 +9,11 @@ public class Layer
     public string Name { get; set; }
     public int NumNeurons { get { return Neurons.Count; } }
     public List<Neuron> Neurons { get; private set; }
+     
 
+    public ActivationFunctions.ActivationFunction activation;
 
-    public Layer(int numNeurons, int numNeuronInputs, List<List<double>> neuronWeights, List<double> neuronBiases, string name = "")
+    public Layer(int numNeurons, int numNeuronInputs, List<List<double>> neuronWeights, List<double> neuronBiases, string name = "", ActivationFunctions.ActivationFunction activation = ActivationFunctions.ActivationFunction.Sigmoid)
     {
         // Validate input
         if (numNeurons <= 0)
@@ -22,25 +24,28 @@ public class Layer
         {
             throw new ArgumentOutOfRangeException(nameof(numNeuronInputs), "Number of neuron inputs must be a positive number.");
         }
+        /*
         if (neuronWeights == null || neuronWeights.Count != numNeurons)
         {
+            Debug.Log(neuronWeights.Count.ToString() + " " + numNeurons.ToString());
             throw new ArgumentException("Neuron weights must be a non-null list with the same length as the number of neurons.", nameof(neuronWeights));
         }
         if (neuronBiases == null || neuronBiases.Count != numNeurons)
         {
             throw new ArgumentException("Neuron biases must be a non-null list with the same length as the number of neurons.", nameof(neuronBiases));
         }
+        */
 
         // Initialize class variables
         Name = name;
         Neurons = new List<Neuron>();
         for (int i = 0; i < numNeurons; i++)
         {
-            Neurons.Add(new Neuron(numNeuronInputs, neuronBiases[i], neuronWeights[i]));
+            Neurons.Add(new Neuron(numNeuronInputs, neuronBiases[i], neuronWeights[i], activation));
         }
     }
 
-    public Layer(int numNeurons, int numNeuronInputs, string name = "") : this(numNeurons, numNeuronInputs, new List<List<double>>(), new List<double>(), name)
+    public Layer(int numNeurons, int numNeuronInputs, string name = "", ActivationFunctions.ActivationFunction activation = ActivationFunctions.ActivationFunction.Sigmoid)
     {
         // Validate input
         if (numNeurons <= 0)

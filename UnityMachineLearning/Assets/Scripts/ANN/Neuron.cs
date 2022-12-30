@@ -7,7 +7,7 @@ public class Neuron
     // the number of inputs the neuron receives
     public int NumInputs { get; }
     
-    public List<double> Inputs { get; }
+    public List<double> Inputs { get; set; }
     public double Output { get; set; }
     // the error gradient of the neuron, used for backpropagation
     public double ErrorGradient { get; set; }
@@ -23,29 +23,32 @@ public class Neuron
     public Func<double, double> ActivationFunctionDerivative { get; set; }
 
 
-    public Neuron(int numInputs, double bias, List<double> weights)
+    public Neuron(int numInputs, double bias, List<double> weights, ActivationFunctions.ActivationFunction activationFunction)
     {
         // Validate input
         if (numInputs <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(numInputs), "Number of inputs must be a positive number.");
         }
+        /*
         if (weights == null || weights.Count != numInputs)
         {
             throw new ArgumentException("Weights must be a non-null list with the same length as the number of inputs.", nameof(weights));
         }
+        */
 
         // Initialize class variables
         NumInputs = numInputs;
         this.Bias = bias;
         Weights = weights;
         Inputs = new List<double>();
+        (ActivationFunction , ActivationFunctionDerivative ) = ActivationFunctions.GetActivationFunction(activationFunction);
     }
 
-    public Neuron(int numInputs) : this(numInputs, UnityEngine.Random.Range(-1f, 1f), new List<double>())
+    public Neuron(int numInputs, ActivationFunctions.ActivationFunction activationFunction = ActivationFunctions.ActivationFunction.Sigmoid) : this(numInputs, UnityEngine.Random.Range(-1f, 1f), new List<double>(), activationFunction)
     {
         // float weightRange = (float)2.4 / (float)numInputs;
-
+        
         for (int i = 0; i < numInputs; i++)
         {
             Weights.Add(UnityEngine.Random.Range(-weightRange, weightRange));
@@ -79,10 +82,14 @@ public class Neuron
         }
 
         // Compute and return the output of the perceptron
+
+        Inputs = input;
+
         double perceptronOutput = 0;
         perceptronOutput += DotProduct(Weights, input);
         perceptronOutput += Bias;
-        return ActivationFunction(perceptronOutput);
+        Output = ActivationFunction(perceptronOutput);
+        return Output;
     }
 
 

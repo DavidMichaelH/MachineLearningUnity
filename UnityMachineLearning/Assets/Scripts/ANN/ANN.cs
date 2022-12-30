@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+
 public class ANN
 {
 	 
@@ -14,7 +15,7 @@ public class ANN
 	List<Layer> layers = new List<Layer>();
  
 
-	public ANN(int nI, int nO, int nH, int nPH, double a)
+	public ANN(int nI, int nO, int nH, int nPH, double a )
 	{
 		numInputs = nI;
 		numOutputs = nO;
@@ -49,7 +50,7 @@ public class ANN
 
 		if (inputValues.Count != numInputs)
 		{
-			Debug.Log("ERROR: Number of Inputs must be " + numInputs);
+		 
 			return outputValues;
 		} 
 
@@ -127,14 +128,19 @@ public class ANN
 
 		// Propagate the input through the neural network
 		List<double> currentInput = input;
+		List<double> currentOutput = new List<double>();
 		for (int i = 0; i < numHidden+1; i++)
 		{
-			List<double> currentOutput = new List<double>();
+			
+			currentOutput.Clear();
+			 
 			for (int j = 0; j < layers[i].NumNeurons; j++)
 			{
+				 
 				currentOutput.Add(layers[i].Neurons[j].ComputePerceptronOutput(currentInput));
 			}
-			currentInput = currentOutput;
+			 
+			currentInput = new List<double>(currentOutput);
 		}
 
 		// Return the output of the neural network
@@ -178,7 +184,7 @@ public class ANN
 	public void UpdateWeights()
 	{
 		// Iterate over the layers of the neural network in reverse order
-		for (int i = numHidden; i >= 0; i--)
+		for (int i = NumLayers - 1; i >= 0; i--)
 		{
 			// Iterate over the neurons in the current layer
 			for (int j = 0; j < layers[i].NumNeurons; j++)
@@ -187,6 +193,7 @@ public class ANN
 				for (int k = 0; k < layers[i].Neurons[j].NumInputs; k++)
 				{
 					// Update the weight of the current input
+					 
 					layers[i].Neurons[j].Weights[k] += alpha * layers[i].Neurons[j].Inputs[k] * layers[i].Neurons[j].ErrorGradient;
 				}
 				// Update the bias of the current neuron
@@ -222,10 +229,12 @@ public class ANN
 			for (int j = 0; j < inputData.Count; j++)
 			{
 				// Calculate the network's output for the current input
-				List<double> output = this.Evaluate(inputData[j]);
+				this.Evaluate(inputData[j]);
 
-				// Backpropagate the error and update the weights and biases
+				// Backpropagate the error and 
 				this.Backpropagate(outputData[j]);
+
+				//update the weights and biases
 				this.UpdateWeights();
 			}
 		}
