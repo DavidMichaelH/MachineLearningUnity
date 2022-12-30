@@ -87,7 +87,7 @@ public class Neuron
 
         double perceptronOutput = 0;
         perceptronOutput += DotProduct(Weights, input);
-        perceptronOutput += Bias;
+        perceptronOutput -= Bias;
         Output = ActivationFunction(perceptronOutput);
         return Output;
     }

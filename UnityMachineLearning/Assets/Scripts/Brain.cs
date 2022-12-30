@@ -10,35 +10,46 @@ public class Brain : MonoBehaviour
 
 	void Start()
 	{
-		ann = new ANN(2, 1, 1, 2, 0.8);
-
-		List<double> result;
+		ann = new ANN(2, 1, 2, 4, 0.8);
+		 
 
 
 		List<List<double>> inputData = new List<List<double>>();
 		List<List<double>> outputData = new List<List<double>>();
 		inputData.Add(new List<double>() { 1, 1 });
-		outputData.Add(new List<double>() { 1 });
+		outputData.Add(new List<double>() { 0 });
 
 		inputData.Add(new List<double>() { 1, 0 });
-		outputData.Add(new List<double>() { 1 });
+		outputData.Add(new List<double>() { 0 });
 
 		inputData.Add(new List<double>() { 0, 1 });
-		outputData.Add(new List<double>() { 1 });
+		outputData.Add(new List<double>() { 0 });
 
 		inputData.Add(new List<double>() { 0, 0 });
-		outputData.Add(new List<double>() { 0 });
+		outputData.Add(new List<double>() { 1 });
+
+		inputData.Add(new List<double>() { 0.3, 0.3 });
+		outputData.Add(new List<double>() { 1 });
+
+
+		inputData.Add(new List<double>() { 0.3, 0 });
+		outputData.Add(new List<double>() { 1 });
+
+
+		inputData.Add(new List<double>() { 0, 0.3 });
+		outputData.Add(new List<double>() { 1 });
 
 		for (int trials = 0; trials < 100; trials++)
         {
-			ann.Train(inputData, outputData, 3);
+			ann.Train(inputData, outputData, 100);
 
 			double sumSquareError = 0;
 			int itr = 0;
 			foreach (List<double> input in inputData)
 			{
 				List<double> predictOut = ann.Evaluate(input);
-				 sumSquareError += ComputeError(predictOut, outputData[itr]);
+		
+				sumSquareError += ComputeError(predictOut, outputData[itr]);
 				itr += 1;
 			}
 			Debug.Log("SSE: " + sumSquareError);

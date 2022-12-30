@@ -40,49 +40,7 @@ public class ANN
 		}
 	}
 
-	 
-
-	public List<double> CalcOutput(List<double> inputValues, List<double> desiredOutput)
-	{
-		List<double> inputs = new List<double>();
-		List<double> outputValues = new List<double>();
-		int currentInput = 0;
-
-		if (inputValues.Count != numInputs)
-		{
-		 
-			return outputValues;
-		} 
-
-		inputs = new List<double>(inputValues);
-		for (int i = 0; i < numHidden + 1; i++)
-		{
-			if (i > 0)
-			{
-				inputs = new List<double>(outputValues);
-			}
-			outputValues.Clear();
-
-			for (int j = 0; j < layers[i].NumNeurons; j++)
-			{
-				double N = 0;
-				layers[i].Neurons[j].Inputs.Clear();
-
-				for (int k = 0; k < layers[i].Neurons[j].NumInputs; k++)
-				{
-					layers[i].Neurons[j].Inputs.Add(inputs[currentInput]);
-					N += layers[i].Neurons[j].Weights[k] * inputs[currentInput];
-					currentInput++;
-				}
-
-				N -= layers[i].Neurons[j].Bias;
-				layers[i].Neurons[j].Output = layers[i].Neurons[j].ActivationFunction(N);
-				outputValues.Add(layers[i].Neurons[j].Output);
-				currentInput = 0;
-			}
-		}
-		return outputValues;
-	}
+	  
 
 	public string PrintWeights()
 	{
@@ -160,7 +118,7 @@ public class ANN
 				for (int j = 0; j < layers[i].NumNeurons; j++)
 				{
 					layers[i].Neurons[j].ErrorGradient =
-						(layers[i].Neurons[j].Output - desiredOutput[j]) *
+						(desiredOutput[j] - layers[i].Neurons[j].Output) *
 						layers[i].Neurons[j].ActivationFunctionDerivative(layers[i].Neurons[j].Output);
 				}
 			}
