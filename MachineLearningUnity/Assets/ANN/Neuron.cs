@@ -21,6 +21,14 @@ namespace Ann
         // the bias of the neuron
         public double Bias { get; set; }
 
+
+        // Support for Adam Optimizer 
+        public List<double> AdamM { get; set; }
+        public List<double> AdamV { get; set; }
+
+        public double AdamBiasM { get; set; }
+        public double AdamBiasV { get; set; }
+
         // used when initalizing the values of the neuron. 
         public float weightRange = 1;
 
@@ -46,6 +54,9 @@ namespace Ann
             NumInputs = numInputs;
             this.Bias = bias;
             Weights = weights;
+
+            
+
             Inputs = new List<double>();
             (ActivationFunction, ActivationFunctionDerivative) = Activations.GetActivationFunction(activationFunction);
         }
@@ -58,6 +69,9 @@ namespace Ann
             {
                 Weights.Add(UnityEngine.Random.Range(-weightRange, weightRange));
             }
+
+            AdamM = new List<double>(new double[numInputs]);
+            AdamV = new List<double>(new double[numInputs]);
         }
 
 

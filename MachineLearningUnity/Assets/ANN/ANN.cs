@@ -2,9 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.Events;
 
 namespace Ann
 {
+
+	public struct EpochData
+    {
+		public double loss;
+		public double alpha;
+		public int epoch;
+    }
+	public class EpochEvent : UnityEvent<EpochData>
+    {
+
+    }
 	public class ANN
 	{
 
@@ -16,10 +28,24 @@ namespace Ann
 		public double alpha;
 		public List<Layer> Layers { get; private set; }
 
-		public ANN()
-        {
+		
+		public double Loss { get; private set; }
+		public double EpochsRemaining { get; private set; }
 
-        }
+		public EpochEvent epochEvent = new EpochEvent();
+
+		public UnityEvent trainingCompleted = new UnityEvent();
+
+		public enum Optimizer { SGD, ADAM }
+
+
+		public List<List<double>> InputData { get; set; }
+		public List<List<double>> OutputData { get; set; }
+
+		public ANN()
+		{
+			 
+		}
 
 		public void Initialize(List<Layer> layers)
 		{
@@ -28,44 +54,6 @@ namespace Ann
 			NumOutputs = layers[layers.Count - 1].NumNeurons;
 			NumLayers = layers.Count;
 		}
-
-
-
-		/// <summary>
-		/// Deprecated
-		/// </summary>
-		/// <param name="nI"></param>
-		/// <param name="nO"></param>
-		/// <param name="nH"></param>
-		/// <param name="nPH"></param>
-		/// <param name="a"></param>
-		public ANN(int nI, int nO, int nH, int nPH, double a)
-		{
-			Layers = new List<Layer>();
-
-			NumInputs = nI;
-			NumOutputs = nO;
-			numHidden = nH;
-			numNPerHidden = nPH;
-			alpha = a;
-
-			if (numHidden > 0)
-			{
-				Layers.Add(new Layer(numNPerHidden, NumInputs));
-
-				for (int i = 0; i < numHidden - 1; i++)
-				{
-					Layers.Add(new Layer(numNPerHidden, numNPerHidden));
-				}
-
-				Layers.Add(new Layer(NumOutputs, numNPerHidden));
-			}
-			else
-			{
-				Layers.Add(new Layer(NumOutputs, NumInputs));
-			}
-		}
-
 
 
 		public string PrintWeights()
@@ -137,11 +125,14 @@ namespace Ann
 			// Return the output of the neural network
 			return currentInput;
 		}
+		 
+		 
 
 
-		public void Backpropagate(List<double> desiredOutput)
+
+
+		public void Optimize(List<double> desiredOutput, Optimizer optimizer = Optimizer.ADAM)
 		{
-
 			// Iterate over the layers of the neural network in reverse order
 			for (int i = NumLayers - 1; i >= 0; i--)
 			{
@@ -169,32 +160,93 @@ namespace Ann
 							Layers[i].Neurons[j].ActivationFunctionDerivative(Layers[i].Neurons[j].Output) * errorGradientSum;
 					}
 				}
-			}
-		}
-
-		public void UpdateWeights()
-		{
-			// Iterate over the layers of the neural network in reverse order
-			for (int i = NumLayers - 1; i >= 0; i--)
-			{
-				// Iterate over the neurons in the current layer
-				for (int j = 0; j < Layers[i].NumNeurons; j++)
-				{
-					// Iterate over the inputs to the current neuron
-					for (int k = 0; k < Layers[i].Neurons[j].NumInputs; k++)
-					{
-						// Update the weight of the current input
-
-						Layers[i].Neurons[j].Weights[k] += alpha * Layers[i].Neurons[j].Inputs[k] * Layers[i].Neurons[j].ErrorGradient;
-					}
-					// Update the bias of the current neuron
-					Layers[i].Neurons[j].Bias += (-1) * alpha * Layers[i].Neurons[j].ErrorGradient;
+                 
+                switch (optimizer)
+                {
+					case Optimizer.ADAM:
+						UpdateWeightsAdam(i);
+						break;
+					case Optimizer.SGD:
+						GradientDecent(i);
+						break;
+					default:
+						throw new ArgumentOutOfRangeException("Invalid choice of optimizer");
 				}
+
 			}
 		}
 
-		public void Train(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
-		{
+		public void UpdateWeightsAdam(int i)
+		{ 
+			 
+			double beta1 = 0.9;
+			double beta2 = 0.999;
+			double learningRate = 0.05;
+			double epsilon = 1e-8;
+			double update = 0;
+			// Update the weights using Adam optimization
+			for (int j = 0; j < Layers[i].NumNeurons; j++)
+			{
+				for (int k = 0; k < Layers[i].Neurons[j].Weights.Count; k++)
+				{
+					// Calculate the Adam update for the weight
+					double errorGradient = Layers[i].Neurons[j].ErrorGradient;
+					double m = Layers[i].Neurons[j].AdamM[k];
+					double v = Layers[i].Neurons[j].AdamV[k];
+
+					m = beta1 * m + (1 - beta1) * errorGradient;
+					v = beta2 * v + (1 - beta2) * (errorGradient * errorGradient);
+					update = (learningRate * m) / (Math.Sqrt(v) + epsilon);
+
+					// Update the weight using the Adam update
+					Layers[i].Neurons[j].Weights[k] -= update;
+
+
+					// Store the updated Adam variables
+					Layers[i].Neurons[j].AdamM[k] = m;
+					Layers[i].Neurons[j].AdamV[k] = v;
+				}
+				// Update the bias of the current neuron
+				// Calculate the Adam update for the bias weight
+				double biasErrorGradient = Layers[i].Neurons[j].ErrorGradient;
+				double biasM = Layers[i].Neurons[j].AdamBiasM;
+				double biasV = Layers[i].Neurons[j].AdamBiasV;
+				biasM = beta1 * biasM + (1 - beta1) * biasErrorGradient;
+				biasV = beta2 * biasV + (1 - beta2) * (biasErrorGradient * biasErrorGradient);
+				double biasUpdate = (learningRate * biasM) / (Math.Sqrt(biasV) + epsilon);
+
+				// Update the bias weight using the Adam update
+				Layers[i].Neurons[j].Bias -= biasUpdate;
+
+				// Store the updated Adam variables
+				Layers[i].Neurons[j].AdamBiasM = biasM;
+				Layers[i].Neurons[j].AdamBiasV = biasV;
+
+			}
+			
+		}
+		public void GradientDecent(int i)
+        {
+			alpha = 0.1;
+
+			// Iterate over the neurons in the current layer
+			for (int j = 0; j < Layers[i].NumNeurons; j++)
+			{
+				// Iterate over the inputs to the current neuron
+				for (int k = 0; k < Layers[i].Neurons[j].NumInputs; k++)
+				{
+					// Update the weight of the current input
+
+					Layers[i].Neurons[j].Weights[k] += alpha * Layers[i].Neurons[j].Inputs[k] * Layers[i].Neurons[j].ErrorGradient;
+				}
+				// Update the bias of the current neuron
+				Layers[i].Neurons[j].Bias += (-1) * alpha * Layers[i].Neurons[j].ErrorGradient;
+			}
+		}
+		 
+
+		public void ValidateTraingInputArguments(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
+        {
 			// Validate input
 			if (inputData == null || inputData.Count == 0)
 			{
@@ -213,28 +265,107 @@ namespace Ann
 				throw new ArgumentOutOfRangeException(nameof(numIterations), "Number of iterations must be a positive number.");
 			}
 
+		}
+
+		public void Train(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
+		{
+			ValidateTraingInputArguments(inputData, outputData, numIterations);
+
+
+
+			EpochsRemaining = numIterations;
+			double loss = 0;
 			// Train the neural network for the specified number of iterations
 			for (int i = 0; i < numIterations; i++)
 			{
-				// Iterate over the input and output data
-				for (int j = 0; j < inputData.Count; j++)
-				{
-					// Calculate the network's output for the current input
-					this.Evaluate(inputData[j]);
+				EpochsRemaining--;
 
-					// Backpropagate the error and 
-					this.Backpropagate(outputData[j]);
+				Loss = RunEpoch();
 
-					//update the weights and biases
-					this.UpdateWeights();
-				}
+				EpochData epochData = new EpochData();
+				epochData.epoch = i;
+				epochData.loss = loss;
+				epochData.alpha = alpha;
+				epochEvent.Invoke(epochData);
+
+				Debug.Log(epochData.loss + " for " + epochData.epoch);
+
+				loss = 0;
+				
 			}
+
+			trainingCompleted.Invoke();
 		}
 
 
+		public IEnumerator Train_CR(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
+		{
+			ValidateTraingInputArguments(inputData, outputData, numIterations);
+
+			InputData = inputData;
+			OutputData = outputData;
+
+			EpochsRemaining = numIterations;
+			double loss = 0;
+			// Train the neural network for the specified number of iterations
+			for (int i = 0; i < numIterations; i++)
+			{
+				EpochsRemaining--;
+				Loss = RunEpoch();
+
+				yield return null;
+
+			}
+
+			trainingCompleted.Invoke();
+		}
+
+		public double RunEpoch()
+        {
+			double loss = 0;
+			for (int j = 0; j < InputData.Count; j++)
+			{
+				// Calculate the network's output for the current input
+				List<double> predictedOutput = this.Evaluate(InputData[j]);
+
+				loss += CalculateLoss(OutputData[j], predictedOutput);
+
+
+				Optimize(OutputData[j]);
+
+			}
+
+			return loss;
+		}
+
+		 
+
+
+		private double CalculateLoss(List<double> expectedOutput, List<double> predictedOutput)
+		{
+			// Calculate the mean squared error between the expected output and the actual output
+			double sumSquaredError = 0;
+			for (int i = 0; i < expectedOutput.Count; i++)
+			{
+				double error = expectedOutput[i] - predictedOutput[i];
+				sumSquaredError += error * error;
+			}
+			return sumSquaredError / expectedOutput.Count;
+		}
+
+		public void Train(List<double> inputData, List<double> outputData, int numIterations)
+		{
+			List<List<double>> x = new List<List<double>>();
+			x.Add(inputData);
+			List<List<double>> y = new List<List<double>>();
+			y.Add(outputData);
+
+			Train(x, y, numIterations);
+		}
+
+		
 
 
 
 	}
 }
-
