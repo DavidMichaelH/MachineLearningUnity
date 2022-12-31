@@ -11,7 +11,7 @@ namespace Ann
      
         public ANN Ann { get; private set; }
 
-        public Model(int numInputs, List<ModelLayer> modelLayers, double learningRate = 0.5, string modelName = "") 
+        public Model(int numInputs, List<ModelLayer> modelLayers, double learningRate = 0.5, string modelName = "")
         { 
 
             this.modelName = modelName;

@@ -25,6 +25,8 @@ public class ANNDrive : MonoBehaviour {
 
     public Transform startTrans;
 
+    public Model.Optimizer optimizer;
+
     // Use this for initialization
     void Start () {
         //ann = new ANN(5,2,1,10,0.5);
@@ -43,23 +45,21 @@ public class ANNDrive : MonoBehaviour {
 
         if (loadFromFile)
         {
-			LoadWeightsFromFile();
-
+			LoadWeightsFromFile("weights");
+           
             trainingDone = true;
         }
         else
-        	StartCoroutine(LoadAndTrain());
-	}
+        {
+            StartCoroutine(LoadAndTrain());
+            model.trainingCompleted.AddListener(() => SaveWeightsToFile("weights"));
+        }
+        	
 
-    /*
-    void OnGUI()
-    {
-        GUI.Label (new Rect (25, 25, 250, 30), "SSE: " + lastSSE);
-        GUI.Label (new Rect (25, 40, 250, 30), "Alpha: " + model.alpha);
-        GUI.Label (new Rect (25, 55, 250, 30), "Trained: " + trainingProgress);
     }
-    */
 
+ 
+    /*
     IEnumerator LoadTrainingSet()
     {
 
@@ -100,7 +100,7 @@ public class ANNDrive : MonoBehaviour {
                         double o2 = Map(0, 1, -1, 1, System.Convert.ToSingle(data[6]));
                         outputs.Add(o2);
 
-                        model.Train(inputs, outputs, 1);
+                        model.Train(inputs, outputs, 1, Model.Optimizer.ADAM);
                         calcOutputs =  model.Evaluate(inputs);
     
 
@@ -137,6 +137,7 @@ public class ANNDrive : MonoBehaviour {
         trainingDone = true;
          
     }
+    */
 
     IEnumerator LoadAndTrain()
     {
@@ -180,35 +181,38 @@ public class ANNDrive : MonoBehaviour {
                 outputData.Add(output);
 
             }
-
-            StartCoroutine(model.Train_CR(inputData, outputData, epochs));
+             
+            StartCoroutine(model.Train_CR(inputData, outputData, epochs, optimizer));
 
             yield return null;
 
         }
         trainingDone = true;
-        SaveWeightsToFile();
+        //SaveWeightsToFile();
     }
 
-    void SaveWeightsToFile()
+    void SaveWeightsToFile(string fileName)
     {
-        string path = Application.dataPath + "/SelfDrivingCar/ModelData/weights.txt";
+        string path = Application.dataPath + "/SelfDrivingCar/ModelData/" + fileName + ".txt";
         StreamWriter wf = File.CreateText(path);
         wf.WriteLine (model.PrintWeights());
         wf.Close();
     }
 
-    void LoadWeightsFromFile()
+    void LoadWeightsFromFile(string fileName)
     {
-    	string path = Application.dataPath + "/SelfDrivingCar/ModelData/weights.txt";
-    	StreamReader wf = File.OpenText(path);
+    	string path = Application.dataPath + "/SelfDrivingCar/ModelData/" + fileName + ".txt";
+        StreamReader wf = File.OpenText(path);
 
         if(File.Exists(path))
         {
         	string line = wf.ReadLine();
+            Debug.Log(line);
             model.LoadWeights(line);
         }
     }
+
+
 
     float Map (float newfrom, float newto, float origfrom,float origto, float value) 
     {
@@ -230,6 +234,7 @@ public class ANNDrive : MonoBehaviour {
         {
             transform.position = startTrans.position;
             transform.rotation = startTrans.rotation;
+
         }
 
         if(!trainingDone) return;
@@ -279,12 +284,10 @@ public class ANNDrive : MonoBehaviour {
         inputs.Add(lDist);
         inputs.Add(r45Dist);
         inputs.Add(l45Dist);
-        outputs.Add(0);
-        outputs.Add(0);
-
+        
          
         calcOutputs = model.Evaluate(inputs);
-        //calcOutputs = model.CalcOutput(inputs,outputs);
+
 
         float translationInput = Map(-1,1,0,1,(float) calcOutputs[0]);
         float rotationInput = Map(-1,1,0,1,(float) calcOutputs[1]);

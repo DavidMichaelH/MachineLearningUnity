@@ -37,6 +37,7 @@ namespace Ann
 		public UnityEvent trainingCompleted = new UnityEvent();
 
 		public enum Optimizer { SGD, ADAM }
+		public Optimizer optimizer;
 
 
 		public List<List<double>> InputData { get; set; }
@@ -67,6 +68,9 @@ namespace Ann
 					{
 						weightStr += w + ",";
 					}
+
+					weightStr += n.Bias + ",";
+
 				}
 			}
 			return weightStr;
@@ -86,6 +90,10 @@ namespace Ann
 						n.Weights[i] = System.Convert.ToDouble(weightValues[w]);
 						w++;
 					}
+
+					n.Bias = System.Convert.ToDouble(weightValues[w]);
+					w++;
+
 				}
 			}
 		}
@@ -99,7 +107,7 @@ namespace Ann
 
 			}
 
-			if (input == null || input.Count != NumInputs)
+			if (input.Count != NumInputs)
 			{
 				throw new ArgumentException("Input of size " + input.Count + " be the same length as the number of inputs of size " + NumInputs);
 
@@ -181,7 +189,7 @@ namespace Ann
 			 
 			double beta1 = 0.9;
 			double beta2 = 0.999;
-			double learningRate = 0.05;
+			double learningRate = 0.5;
 			double epsilon = 1e-8;
 			double update = 0;
 			// Update the weights using Adam optimization
@@ -227,7 +235,7 @@ namespace Ann
 		}
 		public void GradientDecent(int i)
         {
-			alpha = 0.1;
+			
 
 			// Iterate over the neurons in the current layer
 			for (int j = 0; j < Layers[i].NumNeurons; j++)
@@ -267,7 +275,7 @@ namespace Ann
 
 		}
 
-		public void Train(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
+		public void Train(List<List<double>> inputData, List<List<double>> outputData, int numIterations, Optimizer optimizer)
 		{
 			ValidateTraingInputArguments(inputData, outputData, numIterations);
 
@@ -280,7 +288,7 @@ namespace Ann
 			{
 				EpochsRemaining--;
 
-				Loss = RunEpoch();
+				Loss = RunEpoch(optimizer);
 
 				EpochData epochData = new EpochData();
 				epochData.epoch = i;
@@ -288,7 +296,6 @@ namespace Ann
 				epochData.alpha = alpha;
 				epochEvent.Invoke(epochData);
 
-				Debug.Log(epochData.loss + " for " + epochData.epoch);
 
 				loss = 0;
 				
@@ -298,7 +305,7 @@ namespace Ann
 		}
 
 
-		public IEnumerator Train_CR(List<List<double>> inputData, List<List<double>> outputData, int numIterations)
+		public IEnumerator Train_CR(List<List<double>> inputData, List<List<double>> outputData, int numIterations, Optimizer optimizer = Optimizer.ADAM)
 		{
 			ValidateTraingInputArguments(inputData, outputData, numIterations);
 
@@ -311,7 +318,7 @@ namespace Ann
 			for (int i = 0; i < numIterations; i++)
 			{
 				EpochsRemaining--;
-				Loss = RunEpoch();
+				Loss = RunEpoch(optimizer);
 
 				yield return null;
 
@@ -320,7 +327,7 @@ namespace Ann
 			trainingCompleted.Invoke();
 		}
 
-		public double RunEpoch()
+		public double RunEpoch(Optimizer optimizer)
         {
 			double loss = 0;
 			for (int j = 0; j < InputData.Count; j++)
@@ -331,7 +338,7 @@ namespace Ann
 				loss += CalculateLoss(OutputData[j], predictedOutput);
 
 
-				Optimize(OutputData[j]);
+				Optimize(OutputData[j], optimizer);
 
 			}
 
@@ -353,14 +360,19 @@ namespace Ann
 			return sumSquaredError / expectedOutput.Count;
 		}
 
-		public void Train(List<double> inputData, List<double> outputData, int numIterations)
+		public void Train(List<double> inputData, List<double> outputData, int numIterations, Optimizer optimizer = Optimizer.ADAM)
 		{
+
+
 			List<List<double>> x = new List<List<double>>();
 			x.Add(inputData);
 			List<List<double>> y = new List<List<double>>();
 			y.Add(outputData);
 
-			Train(x, y, numIterations);
+			InputData = x;
+			OutputData = y;
+
+			Train(x, y, numIterations, optimizer);
 		}
 
 		

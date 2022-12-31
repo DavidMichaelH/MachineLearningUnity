@@ -7,7 +7,7 @@ public class ServeBall : MonoBehaviour {
 	public GameObject ball;
 
 	public bool backWall = false;
-	public Brain b;
+	public BrainPong b;
 
 	void OnCollisionEnter2D(Collision2D col)
 	{
